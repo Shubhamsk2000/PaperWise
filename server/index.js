@@ -1,34 +1,121 @@
-const express = require('express');
-const app = express();
-const cors = require('cors');
-const multer  = require('multer');
+import express, { response } from 'express';
+import cors from 'cors';
+import multer from 'multer';
 import { Queue } from 'bullmq';
+import IORedis from 'ioredis';
+import { MistralAIEmbeddings } from "@langchain/mistralai";
+import { QdrantVectorStore } from "@langchain/qdrant";
+import { GoogleGenAI } from "@google/genai";
+import * as dotenv from 'dotenv';
+dotenv.config();
 
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const app = express();
+// 🔌 Redis connection using Upstash
+const connection = new IORedis(process.env.REDIS_URL, { maxRetriesPerRequest: null });
+
+// 🛠️ BullMQ queue setup
+const queue = new Queue('file-upload-queue', { connection });
+
+const embeddings = new MistralAIEmbeddings({
+  model: "mistral-embed",
+  apiKey: process.env.MISTRAL_API_KEY,
+});
+
+const vectorStore = await QdrantVectorStore.fromExistingCollection(
+  embeddings,
+  {
+    url: process.env.QDRANT_URL,
+    apiKey: process.env.QDRANT_API_KEY,
+    collectionName: "pdf-docs",
+  }
+);
+
+
+// Multer setup for file upload
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, 'uploads/')
+    cb(null, 'uploads/');
   },
   filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
-    cb(null, uniqueSuffix + '_' + file.originalname)
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + '_' + file.originalname);
   }
-})
+});
 
-const upload = multer({ storage: storage });
+const upload = multer({ storage });
 
 app.use(cors());
 app.use(express.json());
 
+// Test route
 app.get('/', (req, res) => {
   res.send('Hello World!');
 });
 
-app.post('/upload/pdf', upload.single('pdf'), (req, res) => {
-    return res.status(200).json({
-        message: 'PDF file uploaded successfully',
-    });
+// PDF upload route
+app.post('/upload/pdf', upload.single('pdf'), async (req, res) => {
+  await queue.add('file-upload', {
+    filename: req.file.originalname,
+    destination: req.file.destination,
+    path: req.file.path,
+  });
+  return res.status(200).json({
+    message: 'PDF file uploaded successfully and queued',
+  });
 });
 
+app.post('/chat', async (req, res) => {
+  try {
+
+    const userQuery = req.body.query;
+
+    if (!userQuery) {
+      return res.status(400).json({ error: "Some Error is occured." });
+    }
+    const retriever = vectorStore.asRetriever({
+      k: 2,
+    })
+
+    const result = await retriever.invoke(userQuery)
+    const SYSTEM_PROMPT = `
+    You are an intelligent AI assistant that answers the user's question strictly based on the provided PDF context.
+
+    Your task:
+    - Read the chunks extracted from a PDF document.
+    - Provide an accurate and concise answer using **only** the provided context.
+    - If the answer is based on specific pages, mention the **page numbers clearly**.
+    - Also include the **title/heading** of the section or topic, and **bullet points** if present.
+    - If the answer cannot be found in the context, respond with: "The answer is not available in the uploaded document."
+
+    Answer format:
+    <your answer here>(highlight main points or important details),
+    
+    Reference: Page <number>, Section/Topic: "<title>", Key Points: <brief bullet points or excerpt> (if any)
+
+    Context:
+    ${JSON.stringify(result)}
+
+    User Question:
+    ${userQuery}
+`;
+
+    const geminiResponse = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: SYSTEM_PROMPT
+    });
+    console.log("gemini response" ,geminiResponse);
+    return res.status(200).json({
+      assistant_response: geminiResponse
+    })
+
+  } catch (error) {
+    console.error("❌ Error in /chat:", error.message);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+})
+
+// Start server
 app.listen(8000, () => {
   console.log('Server is running on port 8000');
 });

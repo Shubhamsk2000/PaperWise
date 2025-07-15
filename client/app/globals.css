@@ -1,8 +1,4 @@
 @import "tailwindcss";
-*{
-  padding:0;
-  margin:0;
-}
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
