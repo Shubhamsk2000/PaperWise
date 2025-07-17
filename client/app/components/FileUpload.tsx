@@ -4,13 +4,26 @@ import React, { useState } from "react";
 
 type UploadStatus = 'idle' | 'uploading' | 'success' | 'error';
 
+type UploadResponse = {
+  message: string;
+  filename?: string;
+  fileId?: string;
+  pages?: number;
+};
+
 const FileUpload = () => {
   const [uploadStatus, setUploadStatus] = useState<UploadStatus>('idle');
   const [fileName, setFileName] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [uploadedData, setUploadedData] = useState<UploadResponse | null>(null);
 
-  const handleFileUpload = () => {
+  const handleFileUpload = (e?: React.MouseEvent) => {
+    // Prevent event bubbling if called from button click
+    if (e) {
+      e.stopPropagation();
+    }
+    
     // Don't allow file selection if already uploading
     if (uploadStatus === 'uploading') return;
 
@@ -43,153 +56,228 @@ const FileUpload = () => {
               });
             }, 200);
 
+            // Add timeout support
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
             const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/upload/pdf`, {
               method: "POST",
               body: formData,
+              signal: controller.signal,
             });
 
             clearInterval(progressInterval);
+            clearTimeout(timeoutId);
             setUploadProgress(100);
 
-            if (response.status === 200) {
-              const data = await response.json();
+            if (response.ok) {
+              const data: UploadResponse = await response.json();
+              setUploadedData(data);
               setUploadStatus('success');
               setTimeout(() => setUploadProgress(0), 1000); // Reset progress after showing success
             } else {
-              throw new Error(`Upload failed with status: ${response.status}`);
+              const errorData = await response.json().catch(() => ({ message: 'Unknown error occurred' }));
+              throw new Error(errorData.message || `Upload failed with status: ${response.status}`);
             }
           } catch (error) {
             console.error('Upload error:', error);
             setUploadStatus('error');
-            setErrorMessage(error instanceof Error ? error.message : 'Upload failed. Please try again.');
             setUploadProgress(0);
+            
+            if (error instanceof Error) {
+              if (error.name === 'AbortError') {
+                setErrorMessage('Upload timed out. Please check your connection and try again.');
+              } else if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                setErrorMessage('Network error. Please check your internet connection.');
+              } else if (error.message.includes('413') || error.message.includes('too large')) {
+                setErrorMessage('File is too large. Please choose a smaller file (max 10MB).');
+              } else if (error.message.includes('415') || error.message.includes('Unsupported')) {
+                setErrorMessage('Unsupported file type. Please upload a PDF file.');
+              } else {
+                setErrorMessage(error.message || 'Upload failed. Please try again.');
+              }
+            } else {
+              setErrorMessage('An unexpected error occurred. Please try again.');
+            }
           }
         }
       }
     });
   };
 
+  const resetUpload = () => {
+    setUploadStatus('idle');
+    setFileName(null);
+    setErrorMessage(null);
+    setUploadedData(null);
+    setUploadProgress(0);
+  };
+
   return (
-    <div 
-      className={`w-full h-[calc(100vh-5rem)] relative overflow-hidden ${uploadStatus === 'uploading' ? 'cursor-not-allowed' : 'cursor-pointer'}`}
-      style={{
-        background: uploadStatus === 'success' 
-          ? 'linear-gradient(135deg, #10B981 0%, #059669 100%)' 
-          : uploadStatus === 'error'
-          ? 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)'
-          : 'linear-gradient(135deg, #92D277 0%, #7BC159 100%)',
-        fontFamily: 'Inter, sans-serif'
-      }}
-    >
+    <div className="w-full h-[calc(100vh-5rem)] relative overflow-hidden" style={{ background: 'linear-gradient(135deg, var(--secondary-color), rgba(255,255,255,0.1))' }}>
       {/* Progress Bar */}
       {uploadStatus === 'uploading' && (
-        <div className="absolute top-0 left-0 w-full h-2 bg-black bg-opacity-20">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gray-200">
           <div 
-            className="h-full bg-white transition-all duration-300"
-            style={{ width: `${uploadProgress}%` }}
+            className="h-full transition-all duration-500 ease-out"
+            style={{ width: `${uploadProgress}%`, background: 'var(--primary-color)' }}
           />
         </div>
       )}
 
       {/* Main content */}
-      <div 
-        className="absolute inset-0 flex items-center justify-center" 
-        onClick={uploadStatus !== 'uploading' ? handleFileUpload : undefined}
-      >
-        <div className="text-center z-10">
+      <div className="absolute inset-0 flex items-center justify-center p-8">
+        <div className="text-center max-w-md w-full">
+          {/* Upload Icon/Status */}
           <div className="mb-8 relative">
-            <div 
-              className="w-32 h-32 mx-auto rounded-3xl flex items-center justify-center transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl"
-              style={{
-                backdropFilter: 'blur(10px)',
-                background: 'rgba(255, 255, 255, 0.15)',
-                border: '1px solid rgba(255, 255, 255, 0.2)',
-                boxShadow: uploadStatus === 'uploading' ? '0 0 0 15px rgba(146, 210, 119, 0.3)' : '0 0 0 0 rgba(146, 210, 119, 0.7)',
-                animation: uploadStatus === 'idle' ? 'pulse 2s infinite' : 'none'
-              }}
-            >
+            <div className={`w-24 h-24 mx-auto rounded-2xl flex items-center justify-center transition-all duration-500 ${
+              uploadStatus === 'success' 
+                ? 'bg-green-100 border-2 border-green-200' 
+                : uploadStatus === 'error'
+                ? 'bg-red-100 border-2 border-red-200'
+                : 'bg-white border-2 border-gray-200 shadow-lg hover:shadow-xl hover:-translate-y-1'
+            }`}>
               {uploadStatus === 'success' ? (
                 <CheckCircle 
-                  className="text-white"
-                  size={64}
-                  strokeWidth={1.5}
+                  className="text-green-600"
+                  size={48}
+                  strokeWidth={2}
                 />
               ) : uploadStatus === 'error' ? (
                 <AlertCircle 
-                  className="text-white"
-                  size={64}
-                  strokeWidth={1.5}
+                  className="text-red-600"
+                  size={48}
+                  strokeWidth={2}
                 />
+              ) : uploadStatus === 'uploading' ? (
+                <div className="relative">
+                  <Upload 
+                    className="text-gray-600"
+                    size={48}
+                    strokeWidth={2}
+                  />
+                  <div className="absolute inset-0 border-4 border-gray-200 rounded-full animate-spin opacity-75" style={{ borderTopColor: 'var(--primary-color)' }}></div>
+                </div>
               ) : (
                 <Upload 
-                  className={`text-white transition-all duration-300 ${uploadStatus === 'uploading' ? 'animate-spin' : ''}`}
-                  size={64}
-                  strokeWidth={1.5}
+                  className="text-gray-600"
+                  size={48}
+                  strokeWidth={2}
                 />
               )}
             </div>
           </div>
           
-          <h2 className="text-5xl font-bold text-white mb-4 tracking-tight">
-            {uploadStatus === 'uploading' ? 'Uploading...' : 
-             uploadStatus === 'success' ? 'Success!' :
-             uploadStatus === 'error' ? 'Upload Failed' : 'Upload'}
+          {/* Title */}
+          <h2 className={`text-3xl font-bold mb-2 transition-colors duration-300 ${
+            uploadStatus === 'success' ? 'text-green-700' :
+            uploadStatus === 'error' ? 'text-red-700' :
+            'text-gray-800'
+          }`} style={uploadStatus === 'uploading' ? { color: 'var(--primary-color)' } : {}}>
+            {uploadStatus === 'uploading' ? 'Uploading Document' : 
+             uploadStatus === 'success' ? 'Upload Complete!' :
+             uploadStatus === 'error' ? 'Upload Failed' : 'Upload PDF Document'}
           </h2>
           
-          {uploadStatus === 'idle' && !fileName && (
-            <p className="text-white text-xl opacity-90 mb-8 font-light">
-              Drag & drop your PDF here
+          {/* Subtitle */}
+          {uploadStatus === 'idle' && (
+            <p className="text-gray-600 mb-8 text-lg">
+              Choose a PDF file to start analyzing with AI
             </p>
           )}
           
-          {fileName && uploadStatus === 'success' && (
-            <div className="mb-8">
-              <div className="flex items-center justify-center mb-4">
-                <FileText className="text-white mr-3" size={24} />
-                <p className="text-white text-lg opacity-95 font-medium bg-white bg-opacity-20 px-6 py-3 rounded-2xl backdrop-blur-sm">
+          {/* File info for success state */}
+          {fileName && uploadStatus === 'success' && uploadedData && (
+            <div className="mb-8 p-6 bg-green-50 border border-green-200 rounded-xl">
+              <div className="flex items-center justify-center mb-3">
+                <FileText className="text-green-600 mr-3" size={20} />
+                <p className="text-green-800 font-medium truncate max-w-xs">
                   {fileName}
                 </p>
               </div>
-              <p className="text-white text-sm opacity-80">
-                Your PDF is ready for analysis!
-              </p>
+              <div className="text-green-700 text-sm space-y-1">
+                <p className="font-medium">{uploadedData.message}</p>
+                {uploadedData.pages && (
+                  <p>Document contains {uploadedData.pages} pages</p>
+                )}
+                {uploadedData.fileId && (
+                  <p className="text-xs text-green-600 font-mono bg-green-100 px-2 py-1 rounded inline-block">
+                    ID: {uploadedData.fileId}
+                  </p>
+                )}
+              </div>
             </div>
           )}
           
-          {uploadStatus === 'uploading' && (
-            <div className="mb-8">
-              <p className="text-white text-lg opacity-90 mb-2 font-light animate-pulse">
-                Processing your file...
-              </p>
-              <p className="text-white text-sm opacity-75">
-                {uploadProgress}% complete
-              </p>
+          {/* Progress info for uploading state */}
+          {uploadStatus === 'uploading' && fileName && (
+            <div className="mb-8 p-6 bg-white bg-opacity-20 border border-gray-300 rounded-xl backdrop-blur-sm">
+              <div className="flex items-center justify-center mb-3">
+                <FileText className="mr-3" style={{ color: 'var(--primary-color)' }} size={20} />
+                <p className="text-gray-800 font-medium truncate max-w-xs">
+                  {fileName}
+                </p>
+              </div>
+              <div className="text-gray-700 text-sm">
+                <p className="mb-2">Processing your document...</p>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div 
+                    className="h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${uploadProgress}%`, background: 'var(--primary-color)' }}
+                  />
+                </div>
+                <p className="mt-2 text-xs text-gray-600">{uploadProgress}% complete</p>
+              </div>
             </div>
           )}
 
+          {/* Error message */}
           {uploadStatus === 'error' && errorMessage && (
-            <p className="text-white text-lg opacity-90 mb-8 font-light bg-white bg-opacity-20 px-6 py-3 rounded-2xl backdrop-blur-sm mx-auto max-w-md">
-              {errorMessage}
-            </p>
+            <div className="mb-8 p-6 bg-red-50 border border-red-200 rounded-xl">
+              <p className="text-red-700 font-medium mb-2">Something went wrong</p>
+              <p className="text-red-600 text-sm">
+                {errorMessage}
+              </p>
+            </div>
           )}
           
+          {/* Action Button */}
           <button 
-            className={`px-10 py-4 rounded-2xl font-medium transition-all duration-300 border-2 text-white bg-[var(--button-color)] border-black ${
+            className={`w-full px-8 py-4 rounded-xl font-semibold text-white transition-all duration-200 shadow-lg hover:shadow-xl focus:outline-none focus:ring-4  cursor-pointer ${
               uploadStatus === 'uploading' 
-                ? 'opacity-50 cursor-not-allowed' 
-                : 'hover:scale-105 hover:bg-opacity-30'
-            }`}
+                ? 'bg-gray-400 cursor-not-allowed' 
+                : uploadStatus === 'success'
+                ? 'bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 focus:ring-green-200'
+                : uploadStatus === 'error'
+                ? 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 focus:ring-red-200'
+                : 'focus:ring-gray-200'
+            } ${uploadStatus !== 'uploading' ? 'hover:-translate-y-0.5 active:translate-y-0' : ''}`}
+            style={uploadStatus === 'idle' ? { background: 'var(--button-color)' } : {}}
             disabled={uploadStatus === 'uploading'}
-            onClick={uploadStatus === 'success' ? () => {
-              setUploadStatus('idle');
-              setFileName(null);
-              setErrorMessage(null);
-            } : undefined}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (uploadStatus === 'success' || uploadStatus === 'error') {
+                resetUpload();
+              } else {
+                handleFileUpload(e);
+              }
+            }}
           >
-            {uploadStatus === 'uploading' ? `Uploading... ${uploadProgress}%` : 
-             uploadStatus === 'success' ? 'Upload Another PDF' :
-             uploadStatus === 'error' ? 'Try Again' : 'Choose PDF File'}
+            {uploadStatus === 'uploading' ? (
+              <div className="flex items-center justify-center">
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-3"></div>
+                Uploading... {uploadProgress}%
+              </div>
+            ) : uploadStatus === 'success' ? (
+              'Upload Another Document'
+            ) : uploadStatus === 'error' ? (
+              'Try Again'
+            ) : (
+              'Choose PDF File'
+            )}
           </button>
+          
+        
         </div>
       </div>
     </div>
