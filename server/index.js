@@ -10,6 +10,9 @@ import * as dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
 
+//IMP: Initialized worker in main server file only for development purpose. The worker should run on different instance
+import './worker.js'; 
+
 dotenv.config();
 const PORT = process.env.PORT || 8000;
 
