@@ -7,10 +7,19 @@ import { MistralAIEmbeddings } from "@langchain/mistralai";
 import { QdrantVectorStore } from "@langchain/qdrant";
 import { GoogleGenAI } from "@google/genai";
 import * as dotenv from 'dotenv';
+import fs from 'fs';
+import path from 'path';
+
 dotenv.config();
 const PORT = process.env.PORT || 8000;
+
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 const app = express();
+const uploadDir = path.join(process.cwd(), 'uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
 // 🔌 Redis connection using Upstash
 const connection = new IORedis(process.env.REDIS_URL, { maxRetriesPerRequest: null });
 
@@ -55,15 +64,32 @@ app.get('/', (req, res) => {
 
 // PDF upload route
 app.post('/upload/pdf', upload.single('pdf'), async (req, res) => {
-  await queue.add('file-upload', {
-    filename: req.file.originalname,
-    destination: req.file.destination,
-    path: req.file.path,
-  });
-  return res.status(200).json({
-    message: 'PDF file uploaded successfully and queued',
-  });
+  try {
+    // 1. Check if a file was uploaded
+    if (!req.file) {
+      return res.status(400).json({ error: 'No PDF file uploaded' });
+    }
+
+    // 2. Add file info to queue
+    await queue.add('file-upload', {
+      filename: req.file.originalname,
+      destination: req.file.destination,
+      path: req.file.path,
+    });
+
+    // 3. Return success response
+    return res.status(200).json({
+      message: 'PDF file uploaded successfully and queued',
+    });
+  } catch (error) {
+    console.error('Upload error:', error);
+    return res.status(500).json({
+      error: 'Something went wrong during PDF upload',
+      details: error.message || error,
+    });
+  }
 });
+
 
 app.post('/chat', async (req, res) => {
   try {
