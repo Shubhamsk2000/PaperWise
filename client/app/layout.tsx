@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Poppins } from "next/font/google"; 
 import "./globals.css";
-import { ClerkProvider, SignedOut, SignedIn, SignInButton, SignUpButton, } from '@clerk/nextjs'
+import Navbar from './components/Navbar';
+import { ClerkProvider } from '@clerk/nextjs';
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -10,6 +13,12 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+});
+
+const poppins = Poppins({
+  weight: ["400", "500", "600"], // You can choose more or fewer weights
+  subsets: ["latin"],
+  variable: "--font-poppins", // ✅ Add a CSS variable name
 });
 
 export const metadata: Metadata = {
@@ -23,19 +32,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    < ClerkProvider>
+    <ClerkProvider>
       <html lang="en">
         <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+          className={`${geistSans.variable} ${geistMono.variable} ${poppins.variable} antialiased`}
         >
-          {/* <SignedOut>
-            <SignInButton />
-            <SignUpButton />
-          </SignedOut>
-          <SignedIn>
-            { children }
-          </SignedIn> */}
-
+          <nav>
+            <Navbar />
+          </nav>
           {children}
         </body>
       </html>

@@ -17,7 +17,6 @@
     "@langchain/community": "^0.3.48",
     "@langchain/core": "^0.3.62",
     "@langchain/mistralai": "^0.2.1",
-    "@langchain/openai": "^0.5.18",
     "@langchain/qdrant": "^0.1.2",
     "@langchain/textsplitters": "^0.1.0",
     "bullmq": "^5.56.4",

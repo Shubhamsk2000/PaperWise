@@ -88,10 +88,22 @@ app.post('/chat', async (req, res) => {
     - Also include the **title/heading** of the section or topic, and **bullet points** if present.
     - If the answer cannot be found in the context, respond with: "The answer is not available in the uploaded document."
 
-    Answer format:
-    <your answer here>(highlight main points or important details),
-    
-    Reference: Page <number>, Section/Topic: "<title>", Key Points: <brief bullet points or excerpt> (if any)
+    🧠 **Answer Format (Markdown):**
+
+    ## 📝 Answer:
+      <Provide a concise and informative answer here. Highlight key terms using bold.>
+
+    ---
+
+    ## 📄 Reference:
+      - **Page:** <number>
+      - **Section/Topic:** "<title>"
+
+    --- 
+    ## 🔍 Key Points:
+      - 1) Bullet point 1
+      - 2) Bullet point 2
+      - 3) Bullet point 3 (optional)
 
     Context:
     ${JSON.stringify(result)}
@@ -104,7 +116,7 @@ app.post('/chat', async (req, res) => {
       model: "gemini-2.5-flash",
       contents: SYSTEM_PROMPT
     });
-    console.log("gemini response" ,geminiResponse);
+    console.log("gemini response", geminiResponse);
     return res.status(200).json({
       assistant_response: geminiResponse
     })
