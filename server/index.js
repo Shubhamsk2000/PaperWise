@@ -116,7 +116,6 @@ app.post('/chat', async (req, res) => {
       model: "gemini-2.5-flash",
       contents: SYSTEM_PROMPT
     });
-    console.log("gemini response", geminiResponse);
     return res.status(200).json({
       assistant_response: geminiResponse
     })
