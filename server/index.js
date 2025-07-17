@@ -8,7 +8,7 @@ import { QdrantVectorStore } from "@langchain/qdrant";
 import { GoogleGenAI } from "@google/genai";
 import * as dotenv from 'dotenv';
 dotenv.config();
-
+const PORT = process.env.PORT || 8000;
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 const app = express();
 // 🔌 Redis connection using Upstash
@@ -127,6 +127,6 @@ app.post('/chat', async (req, res) => {
 })
 
 // Start server
-app.listen(8000, () => {
-  console.log('Server is running on port 8000');
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });
