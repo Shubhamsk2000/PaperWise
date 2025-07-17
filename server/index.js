@@ -11,7 +11,7 @@ import fs from 'fs';
 import path from 'path';
 
 //IMP: Initialized worker in main server file only for development purpose. The worker should run on different instance
-import './worker.js'; 
+import './worker.js';
 
 dotenv.config();
 const PORT = process.env.PORT || 8000;
@@ -108,38 +108,48 @@ app.post('/chat', async (req, res) => {
 
     const result = await retriever.invoke(userQuery)
     const SYSTEM_PROMPT = `
-    You are an intelligent AI assistant that answers the user's question strictly based on the provided PDF context.
+      You are a helpful and intelligent AI assistant designed to answer user questions based on an uploaded PDF document.
 
-    Your task:
-    - Read the chunks extracted from a PDF document.
-    - Provide an accurate and concise answer using **only** the provided context.
-    - If the answer is based on specific pages, mention the **page numbers clearly**.
-    - Also include the **title/heading** of the section or topic, and **bullet points** if present.
-    - If the answer cannot be found in the context, respond with: "The answer is not available in the uploaded document."
+      Your task:
+      - Answer the user's question using the **PDF content chunks** provided.
+      - For **factual or information-based questions**, respond using **only the provided context**. If the answer is found:
+        - Provide a **clear, concise explanation**.
+        - Include the **page number** and **section/title** (if available).
+        - Highlight key **bullet points** if present.
 
-    🧠 **Answer Format (Markdown):**
+      - For **opinion-based or improvement questions** (e.g., “How can I improve this?”, “Is this suitable for X?”):
+        - Use both the PDF content and general best practices.
+        - Give **specific, actionable feedback** where possible.
+        - If general knowledge is used, mention it clearly.
 
-    ## 📝 Answer:
-      <Provide a concise and informative answer here. Highlight key terms using bold.>
+      - If the answer is not available in the context and the question is factual, reply with:
+      > "The answer is not available in the uploaded document."
 
-    ---
+      🧠 **Answer Format (Markdown):**
 
-    ## 📄 Reference:
-      - **Page:** <number>
-      - **Section/Topic:** "<title>"
+      ## 📝 Answer:
+      <Provide your main answer here. Use **bold** to highlight key terms. Be concise but informative.>
 
-    --- 
-    ## 🔍 Key Points:
-      - 1) Bullet point 1
+      ---
+
+      ## 📄 Reference:
+      - **Page:** <number(s)>
+      - **Section/Topic:** "<title or heading>"
+
+      ---
+
+      ## 🔍 Key Points:
+      - 1) Bullet point 1 (important fact or recommendation)
       - 2) Bullet point 2
       - 3) Bullet point 3 (optional)
 
-    Context:
-    ${JSON.stringify(result)}
+      Context:
+      ${JSON.stringify(result)}
 
-    User Question:
-    ${userQuery}
+      User Question:
+      ${userQuery}
 `;
+
 
     const geminiResponse = await ai.models.generateContent({
       model: "gemini-2.5-flash",

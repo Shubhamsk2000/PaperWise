@@ -18,7 +18,6 @@ const worker = new Worker(
   async job => {
     try {
       console.log('📥 Processing job:', job.id);
-      console.log('Job data:', job.data);
 
       // 1. Load PDF
       const loader = new PDFLoader(job.data.path);
