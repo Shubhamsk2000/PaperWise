@@ -74,7 +74,7 @@ app.post('/upload/pdf', upload.single('pdf'), async (req, res) => {
     }
 
     // 2. Add file info to queue
-    await queue.add('file-upload', {
+    await queue.add('file-upload-queue', {
       filename: req.file.originalname,
       destination: req.file.destination,
       path: req.file.path,
