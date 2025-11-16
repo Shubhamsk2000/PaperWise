@@ -36,7 +36,7 @@ const Navbar = () => {
       {/* Desktop Navigation */}
       <div className="hidden md:flex items-center space-x-6">
         <nav className="flex items-center space-x-8">
-          <Link href='https://github.com/Shubhamsk2000/PaperWise' target="_blank">
+          {/* <Link href='https://github.com/Shubhamsk2000/PaperWise' target="_blank">
             <Image
               src={'/github-color.svg'}
               alt="github"
@@ -44,7 +44,7 @@ const Navbar = () => {
               height={35}
             />
 
-          </Link>
+          </Link> */}
           <Link
             href="/"
             className="text-gray-700 hover:text-gray-900 font-medium transition-colors duration-200 relative group"
