@@ -10,6 +10,8 @@ import * as dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
 
+import "./worker.js";
+
 dotenv.config();
 const PORT = process.env.PORT || 8000;
 
@@ -151,6 +153,7 @@ app.post('/chat', async (req, res) => {
       model: "gemini-2.5-flash",
       contents: SYSTEM_PROMPT
     });
+
     return res.status(200).json({
       assistant_response: geminiResponse
     })

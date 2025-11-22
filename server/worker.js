@@ -37,6 +37,7 @@ const worker = new Worker(
         apiKey: process.env.MISTRAL_API_KEY,
       });
 
+
       // 4. Store in Qdrant
       const vectorStore = await QdrantVectorStore.fromExistingCollection(
         embeddings,

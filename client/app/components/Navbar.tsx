@@ -36,7 +36,7 @@ const Navbar = () => {
       {/* Desktop Navigation */}
       <div className="hidden md:flex items-center space-x-6">
         <nav className="flex items-center space-x-8">
-          {/* <Link href='https://github.com/Shubhamsk2000/PaperWise' target="_blank">
+          <Link href='https://github.com/Shubhamsk2000/PaperWise' target="_blank">
             <Image
               src={'/github-color.svg'}
               alt="github"
@@ -44,7 +44,7 @@ const Navbar = () => {
               height={35}
             />
 
-          </Link> */}
+          </Link>
           <Link
             href="/"
             className="text-gray-700 hover:text-gray-900 font-medium transition-colors duration-200 relative group"
@@ -63,39 +63,6 @@ const Navbar = () => {
           </Link>
         </nav>
 
-        {/* Auth Buttons */}
-        <div className="flex items-center space-x-3">
-          <SignedOut>
-            <Link href='/sign-in' >
-              <button
-                className="px-5 py-2.5 text-gray-700 font-medium rounded-xl hover:bg-gray-100 transition-all duration-200 border border-gray-200 cursor-pointer bg-[var(--secondary-color)]"
-              >
-                Login
-              </button>
-            </Link>
-            <Link href='/sign-up'>
-              <button
-                className="px-5 py-2.5 text-white font-medium rounded-xl transition-all duration-200 hover:opacity-90 hover:shadow-lg  bg-[var(--button-color)] cursor-pointer hover:bg-white hover:text-black"
-              >
-                Sign Up
-              </button>
-            </Link>
-          </SignedOut>
-
-          <SignedIn>
-            <div className="flex justify-center items-center gap-4">
-
-              <Link href='/chat'>
-                <button
-                  className="px-5 py-2.5 text-white font-medium rounded-xl transition-all duration-200 hover:opacity-90 hover:shadow-lg  bg-[var(--button-color)] cursor-pointer hover:bg-white hover:text-black"
-                >
-                  Start Chat
-                </button>
-              </Link>
-              <UserButton />
-            </div>
-          </SignedIn>
-        </div>
       </div>
 
       {/* Mobile Menu Button */}
@@ -147,41 +114,7 @@ const Navbar = () => {
             Contact
           </Link>
 
-          <div className="pt-4 border-t border-gray-200 space-y-3">
 
-            <SignedOut>
-              <Link href='/sign-in'>
-                <button
-                  className="w-full px-5 py-2.5 text-gray-700 font-medium rounded-xl hover:bg-gray-100 transition-all duration-200 border border-gray-200"
-                >
-                  Login
-                </button>
-              </Link>
-              <Link href='/sign-up'>
-                <button
-                  className="w-full px-5 py-2.5 text-white font-medium rounded-xl transition-all duration-200 hover:opacity-90"
-                  style={{ backgroundColor: 'var(--button-color)' }}
-                >
-                  Sign Up
-                </button>
-              </Link>
-            </SignedOut>
-
-            <SignedIn>
-              <div>
-                <Link href='/chat'>
-                  <button
-                    className="w-full px-5 py-2.5 text-white font-medium rounded-xl transition-all duration-200 hover:opacity-90"
-                    style={{ backgroundColor: 'var(--button-color)' }}
-                  >
-                    Start Chat
-                  </button>
-                </Link>
-                <UserButton />
-              </div>
-            </SignedIn>
-
-          </div>
         </div>
       </div>
     </nav>
