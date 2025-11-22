@@ -1,7 +1,6 @@
 "use client";
 import Link from "next/link";
 import Image from "next/image";
-import { UserButton, SignedIn, SignedOut } from "@clerk/nextjs";
 import { useState } from "react";
 
 const Navbar = () => {
