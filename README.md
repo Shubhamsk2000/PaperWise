@@ -4,13 +4,6 @@
 
 PaperWise is an intelligent AI-powered RAG (Retrieval-Augmented Generation) application that revolutionizes how you interact with PDF documents. Upload any PDF document and engage in natural conversations to extract insights, get summaries, find specific information, and ask complex questions about your documents.
 
-## 🎥 Demo
-
-<div align="center">
-    <iframe width="560" height="315" src="https://www.youtube.com/embed/DjYZk8nrXVY?si=-a3JK5bx0Yi9m-op" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
-</div>
-
-*Demo video showcasing the complete workflow from PDF upload to AI-powered conversations*
 
 ## 🌟 Features
 
