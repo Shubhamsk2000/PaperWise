@@ -1,0 +1,21 @@
+@import "tailwindcss";
+
+:root {
+    --primary-bg: #151515;
+    --secondary-bg: #1f1f1f;
+    --primary-color: #ffffff;
+    --primary-text: #fff;
+    --x-padding: 2rem;
+    --navbar-h: 4rem;
+}
+
+@layer utilities {
+    .no-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+
+    .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+}

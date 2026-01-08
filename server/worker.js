@@ -5,7 +5,6 @@ import { QdrantVectorStore } from "@langchain/qdrant";
 import { CharacterTextSplitter } from "@langchain/textsplitters";
 import * as dotenv from 'dotenv';
 import { MistralAIEmbeddings } from "@langchain/mistralai";
-
 dotenv.config();
 
 const connection = new IORedis(process.env.REDIS_URL, {
@@ -13,9 +12,24 @@ const connection = new IORedis(process.env.REDIS_URL, {
   enableReadyCheck: false,
 });
 
+const embeddings = new MistralAIEmbeddings({
+  model: "mistral-embed",
+  apiKey: process.env.MISTRAL_API_KEY,
+});
+
+const vectorStore = await QdrantVectorStore.fromExistingCollection(
+  embeddings,
+  {
+    url: process.env.QDRANT_URL,
+    apiKey: process.env.QDRANT_API_KEY,
+    collectionName: "pdf-docs",
+  }
+);
+
 const worker = new Worker(
   'file-upload-queue',
   async job => {
+    if(job.name !== 'process-pdf') return;
     try {
       console.log('📥 Processing job:', job.id);
 
@@ -31,22 +45,6 @@ const worker = new Worker(
       const chunks = await splitter.splitDocuments(doc);
       console.log(`📄 PDF split into ${chunks.length} chunks`);
 
-      // 3. Set up embeddings
-      const embeddings = new MistralAIEmbeddings({
-        model: "mistral-embed",
-        apiKey: process.env.MISTRAL_API_KEY,
-      });
-
-
-      // 4. Store in Qdrant
-      const vectorStore = await QdrantVectorStore.fromExistingCollection(
-        embeddings,
-        {
-          url: process.env.QDRANT_URL,
-          apiKey: process.env.QDRANT_API_KEY,
-          collectionName: "pdf-docs",
-        }
-      );
 
       await vectorStore.addDocuments(chunks);
       console.log(`✅ Embedded and stored in Qdrant`);
