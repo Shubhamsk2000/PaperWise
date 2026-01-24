@@ -1,9 +1,9 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import Home from './pages/Home';
-import Workspace from './pages/Workspace';
-import NavigationBar from './components/NavigationBar';
-import Login from './pages/Login';
-import SignUp from './pages/signup';
+import Home from './pages/Home.jsx';
+import Workspace from './pages/Workspace.jsx';
+import NavigationBar from './components/NavigationBar.jsx';
+import Login from './pages/Login.jsx';
+import SignUp from './pages/SignUp.jsx';
 import ProtectedRoute from './components/ProtectedRoute';
 import { AuthProvider } from './context/AuthProvider';
 import User_Workspaces from './pages/User_Workspaces.jsx';

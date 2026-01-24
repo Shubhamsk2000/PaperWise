@@ -13,7 +13,6 @@ router.post('/signup', async (req, res) => {
 
         if (!userName || !email || !password) {
             return res.status(400).json({
-                status: "fail",
                 message: "All fields are required"
             });
         }
@@ -28,19 +27,16 @@ router.post('/signup', async (req, res) => {
     } catch (error) {
         if (error.code === 11000) {
             return res.status(400).json({
-                status: "fail",
                 message: "This email is already registered. Please try logging in.",
             });
         }
         if (error.name === "ValidationError") {
             return res.status(400).json({
-                status: "fail",
                 message: error.message,
             });
         }
 
         res.status(500).json({
-            status: "error",
             message: {
                 error_name: error.name,
                 error_message: error.message

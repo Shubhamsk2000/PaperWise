@@ -52,7 +52,7 @@ const signup = () => {
       }
     } catch (error) {
       toast.error("Network error. Please try again");
-      console.error("Login Error:", error);
+      console.error("Signup Error:", error);
     } finally {
       setLoading(false);
     }
