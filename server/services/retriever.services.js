@@ -8,7 +8,7 @@ export const handleRetriever = async (userQuery, activePdfs) => {
             },
         },
     }
-
+    
     const retriever = vectorStore.asRetriever({
         filter: filter,
         k: 1,

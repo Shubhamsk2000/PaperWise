@@ -3,17 +3,21 @@ import Chat from '../infra/db/models/chat.model.js';
 import { protectMiddleware } from '../middleware/auth.middleware.js';
 import { handleRetriever } from '../services/retriever.services.js';
 import { generateAnswer } from '../services/ai.services.js';
+
 const router = Router({ mergeParams: true });
 
 router.get('/', protectMiddleware, async (req, res) => {
     try {
         const workspaceId = req.params.workspaceId;
+
         if (!workspaceId) {
             return res.status(400).json({
                 error: "workspaceId required"
             });
         }
-        const chats = await Chat.find({ workspace: workspaceId, userId: req.user.userId }).select('role content').sort({ createdAt: -1 });
+
+        const chats = await Chat.find({ workspaceId: workspaceId, userId: req.user.userId }).select('role content createdAt').sort({ createdAt: 1 });
+
         res.status(200).json({
             chats: chats,
         });
@@ -21,7 +25,7 @@ router.get('/', protectMiddleware, async (req, res) => {
     } catch (error) {
         console.log(error.message);
         res.status(500).json({
-            message: error.message,
+            error: error.message,
         });
     }
 });
@@ -29,41 +33,43 @@ router.get('/', protectMiddleware, async (req, res) => {
 //take user question -> fetch relevant vectors -> give to llm -> and return the answer
 router.post('/', protectMiddleware, async (req, res) => {
     try {
-        const userQuery = req.body.query;
-        const activePdfs = req.body.activePdfs;
-        const workspaceId = req.params.workspaceId;
 
-        if (!userQuery || activePdfs.length === 0) {
-            res.status(400).json({
-                error: "userQuery required"
+        const workspaceId = req.params.workspaceId;
+        const { query: userQuery, activePdfs } = req.body;
+
+        if (!userQuery || activePdfs?.length === 0) {
+            return res.status(400).json({
+                error: "Query and active PDFS are required"
             });
-            return;
         }
 
         const similarityResult = await handleRetriever(userQuery, activePdfs);
+
         const llmAnswer = await generateAnswer(userQuery, similarityResult);
 
-        if (llmAnswer) {
-            await Chat.insertMany([{
-                workspaceId,
-                userId: req.user.userId,
-                role: "user",
-                content: userQuery,
-            }, {
-                workspaceId,
-                userId: req.user.userId,
-                role: "assistant",
-                content: llmAnswer,
-            }
-            ]);
-        };
 
-        res.status(200).json({
-            assistant: llmAnswer
+        const savedMessages = await Chat.insertMany([{
+            workspaceId,
+            userId: req.user.userId,
+            role: "user",
+            content: userQuery,
+        }, {
+            workspaceId,
+            userId: req.user.userId,
+            role: "assistant",
+            content: llmAnswer,
+        }
+        ]);
+
+        return res.status(200).json({
+            newMessages: savedMessages
         });
 
     } catch (error) {
         console.log(error.message);
+        return res.status(500).json({
+            error: error.message
+        });
     }
 });
 

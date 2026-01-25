@@ -3,7 +3,6 @@ import { toast } from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthProvider';
 import { Eye, EyeOff } from 'lucide-react';
-import abstractImg from '../assets/abstract.jpg';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -55,10 +54,8 @@ const Login = () => {
   return (
     <div className='flex h-full'>
 
-      <div className="w-2/5 justify-center items-center  md:flex hidden"
-        style={{
-          background: `linear-gradient(rgba(0,0,0,0.9), rgba(0,0,0,0.8)), url(${abstractImg}) no-repeat center / cover`,
-        }}>
+      <div className="w-2/5 justify-center items-center  md:flex hidden design"
+        >
       </div>
 
       <div className="md:w-3/5 flex justify-center items-center  w-full">

@@ -8,7 +8,7 @@ import * as dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
 import connectDb from './infra/db/mongodb.js';
-// import "./worker.js";
+import "./worker.js";
 
 dotenv.config();
 const PORT = process.env.PORT || 8000;

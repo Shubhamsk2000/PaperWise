@@ -1,56 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthProvider.jsx';
 import { BotMessageSquare, Send, Sparkles, User } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
-const Conversation = ({ workspaceId, sourcesLen }) => {
+const Conversation = ({ workspaceId, activePdfs }) => {
+  const sourcesLen = activePdfs.length;
   const { user } = useAuth();
   const [messages, setMessages] = useState([]);
   const [userQuery, setUserQuery] = useState("");
+  const messageEndRef = useRef(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const messagess = [
-    {
-      "workspaceId": "695f5d884d46970f865a082c",
-      "userId": "6954110abafb245d024fae67",
-      "role": "user",
-      "content": "What are the main components of my PaperWise project architecture?",
-      "createdAt": "2026-01-22T12:00:00.000Z"
-    },
-    {
-      "workspaceId": "695f5d884d46970f865a082c",
-      "userId": "6954110abafb245d024fae67",
-      "role": "assistant",
-      "content": "PaperWise uses a RAG (Retrieval-Augmented Generation) stack. The frontend is built with React and Tailwind CSS. The backend uses Node.js and Express, which communicates with MongoDB Atlas for both document metadata and vector storage. For the AI logic, you are using LangChain and Gemini for processing PDF context and generating answers.",
-      "createdAt": "2026-01-22T12:00:05.000Z"
-    },
-    {
-      "workspaceId": "695f5d884d46970f865a082c",
-      "userId": "6954110abafb245d024fae67",
-      "role": "user",
-      "content": "How does the vector search work when I select specific PDFs?",
-      "createdAt": "2026-01-22T12:05:00.000Z"
-    },
-    {
-      "workspaceId": "695f5d884d46970f865a082c",
-      "userId": "6954110abafb245d024fae67",
-      "role": "assistant",
-      "content": "When you select specific PDFs in the sidebar, your backend sends an array of PDF IDs to the vector search query. MongoDB then applies a 'pre-filter' to only look at chunks belonging to those IDs. It then performs a cosine similarity search between your question's vector and the filtered chunks to find the most relevant context.",
-      "createdAt": "2026-01-22T12:05:10.000Z"
-    },
-    {
-      "workspaceId": "695f5d884d46970f865a082c",
-      "userId": "6954110abafb245d024fae67",
-      "role": "user",
-      "content": "Can I add YouTube transcripts as a source as well?",
-      "createdAt": "2026-01-22T12:10:00.000Z"
-    },
-    {
-      "workspaceId": "695f5d884d46970f865a082c",
-      "userId": "6954110abafb245d024fae67",
-      "role": "assistant",
-      "content": "Yes, by integrating youtubei.js, you can fetch video transcripts, chunk them using LangChain, and store them as vectors in MongoDB. This allows you to chat with video content just like you do with PDF documents.",
-      "createdAt": "2026-01-22T12:10:08.000Z"
-    }
-  ]
+  const scrollToBottom = () => {
+    messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
 
   useEffect(() => {
     const fetchOldMessages = async () => {
@@ -62,28 +32,80 @@ const Conversation = ({ workspaceId, sourcesLen }) => {
 
       const data = await response.json();
 
-      console.log("get chats", data);
+      if (!response.ok) {
+        throw new Error(data?.error);
+      }
 
+      setMessages(data.chats);
     }
 
     fetchOldMessages();
-  }, []);
+  }, [workspaceId]);
 
-  const handleSendMessage = (e) => {
+  const handleSendMessage = async (e) => {
     e.preventDefault();
-    console.log("clicked")
-  }
+
+    if (!userQuery.trim()) return;
+    const tempId = Date.now().toString();
+
+    const tempUserQuery = {
+      '_id': tempId,
+      'role': 'user',
+      'content': userQuery,
+      'createdAt': new Date().toDateString(),
+    };
+    setUserQuery("");
+
+    setMessages(prev => [...prev, tempUserQuery]);
+
+    try {
+      setIsLoading(true);
+      const response = await fetch(`${import.meta.env.VITE_SERVER_URL}/workspace/${workspaceId}/chats`, {
+        method: 'POST',
+        headers: {
+          "Content-Type": "application/json",
+          "authorization": `Bearer ${localStorage.getItem('jwt-token')}`,
+        },
+        body: JSON.stringify({
+          query: tempUserQuery.content,
+          activePdfs
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.message);
+      }
+
+      setMessages(prev => {
+        const filtered = prev.filter(message => message._id !== tempId);
+        return [...filtered, ...data.newMessages];
+      });
+
+    } catch (error) {
+      console.log(error.message);
+
+    }
+    finally {
+      setIsLoading(false);
+    }
+
+  };
+
   return (
     <div className='flex flex-col justify-between border-2 h-full rounded-xl border-[#4b4b4b] bg-[#1a1a1a] w-full relative'>
+
       <div className="flex justify-between items-center p-4 border-b-2 border-[#4b4b4b] shrink-0">
         <span>Chat</span>
       </div>
 
-      <div className='flex-1 overflow-y-auto p-4 flex flex-col'>
+      {/* messages section */}
+      <div className='flex-1 overflow-y-auto p-4 flex flex-col custom-scrollbar'>
         {
-          messagess.map((message, i) => {
+          messages?.map((message) => {
             return (
-              <div key={i} className={`flex my-4 items-start gap-3 ${message.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
+              <div key={message._id} className={`flex my-4 items-start gap-3 ${message.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
 
                 <div className={`w-10 h-10 shrink-0 rounded-full border flex items-center justify-center text-xs font-bold overflow-hidden ${message.role === 'user'
                   ? 'bg-zinc-100 text-black border-zinc-300'
@@ -93,8 +115,34 @@ const Conversation = ({ workspaceId, sourcesLen }) => {
                 </div>
                 <div className={`flex flex-col gap-1 max-w-[80%] ${message.role === 'user' ? 'items-end' : 'items-start'}`}>
 
-                  <div className={` border p-2 rounded-2xl ${message.role === 'user' ? 'bg-zinc-800 text-white rounded-tr-none' : 'g-[#222] text-zinc-200 border border-[#333] rounded-tl-none'}`}>
-                    {message.content}
+                  <div className={` border p-2 rounded-2xl ${message.role === 'user' ? 'bg-zinc-800 text-white rounded-tr-none' : ' text-zinc-200 border border-[#333] rounded-tl-none'}`}>
+
+                    {/* message.content inside markdown */}
+                    <ReactMarkdown
+                      children={message.content}
+                      components={{
+                        code({ node, inline, className, children, ...props }) {
+                          const match = /language-(\w+)/.exec(className || '');
+                          return !inline && match ? (
+                            <SyntaxHighlighter
+                              children={String(children).replace(/\n$/, '')}
+                              style={oneDark}
+                              language={match[1]}
+                              PreTag="div"
+                              className="rounded-md my-2"
+                              {...props}
+                            />
+                          ) : (
+                            <code className="bg-zinc-700 px-1 rounded text-pink-400" {...props}>
+                              {children}
+                            </code>
+                          );
+                        },
+                        ul: ({ children }) => <ul className="list-disc ml-4 my-2">{children}</ul>,
+                        ol: ({ children }) => <ol className="list-decimal ml-4 my-2">{children}</ol>,
+                      }}
+                    />
+
                   </div>
 
                   <span className="text-[10px] text-zinc-600 px-1">
@@ -105,9 +153,28 @@ const Conversation = ({ workspaceId, sourcesLen }) => {
             )
           })
         }
+        {
+          isLoading && (
+            <div className="flex items-start gap-3 my-4 flex-row animate-pulse">
+              <div className="w-10 h-10 shrink-0 rounded-full border flex items-center justify-center bg-blue-600 text-white border-blue-500">
+                <BotMessageSquare size={20} />
+              </div>
+
+              <div className="flex flex-col gap-1 items-start">
+                <div className="bg-[#222] text-zinc-400 border border-[#333] p-3 rounded-2xl rounded-tl-none flex gap-1">
+                  <span className="animate-bounce [animation-delay:-0.3s]">.</span>
+                  <span className="animate-bounce [animation-delay:-0.15s]">.</span>
+                  <span className="animate-bounce">.</span>
+                </div>
+              </div>
+            </div>
+          )
+        }
+        <div ref={messageEndRef}> </div>
       </div>
 
-      <div className="m-4 mt-2 flex relative group">
+      {/* input section */}
+      <div className="shrink-0 m-4 mt-2 flex relative group">
         <form onSubmit={handleSendMessage} className="w-full relative">
           <input
             type="text"

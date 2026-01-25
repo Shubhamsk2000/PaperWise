@@ -14,7 +14,7 @@ const Workspace = () => {
         activePdfs={activePdfs}
         setActivePdfs={setActivePdfs}
       />
-      <Conversation workspaceId={workspaceId} sourcesLen={activePdfs.length}/>
+      <Conversation workspaceId={workspaceId} activePdfs={activePdfs} />
     </div>
   );
 };

@@ -8,7 +8,6 @@ const AddSources = ({ workspaceId, activePdfs, setActivePdfs }) => {
     const [sources, setSources] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const token = localStorage.getItem('jwt-token');
-    
 
     // fetching preuploaded files
     useEffect(() => {
@@ -20,6 +19,10 @@ const AddSources = ({ workspaceId, activePdfs, setActivePdfs }) => {
             });
             const data = await response.json();
             setSources(data.pdfs);
+
+            if(data.pdfs && data.pdfs.length > 0){
+                setActivePdfs([data.pdfs[0]._id]);
+            }
         }
         handleGetPdfs();
     }, [workspaceId]);
@@ -102,7 +105,7 @@ const AddSources = ({ workspaceId, activePdfs, setActivePdfs }) => {
                     <div className="pt-4 flex flex-col gap-1">
                         {sources.map((source) => {
                             let displayName = source.fileName.replace(/^[^_]*_/, "");
-                            let isSelected = activePdfs.includes(source._id);
+                            let isSelected = activePdfs?.includes(source._id);
 
                             return (
                                 <div
