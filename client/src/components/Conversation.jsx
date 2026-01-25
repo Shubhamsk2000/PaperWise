@@ -1,9 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthProvider.jsx';
 import { BotMessageSquare, Send, Sparkles, User } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import MarkdownMessage from './MarkdownMessage.jsx';
 
 const Conversation = ({ workspaceId, activePdfs }) => {
   const sourcesLen = activePdfs.length;
@@ -118,30 +116,7 @@ const Conversation = ({ workspaceId, activePdfs }) => {
                   <div className={` border p-2 rounded-2xl ${message.role === 'user' ? 'bg-zinc-800 text-white rounded-tr-none' : ' text-zinc-200 border border-[#333] rounded-tl-none'}`}>
 
                     {/* message.content inside markdown */}
-                    <ReactMarkdown
-                      children={message.content}
-                      components={{
-                        code({ node, inline, className, children, ...props }) {
-                          const match = /language-(\w+)/.exec(className || '');
-                          return !inline && match ? (
-                            <SyntaxHighlighter
-                              children={String(children).replace(/\n$/, '')}
-                              style={oneDark}
-                              language={match[1]}
-                              PreTag="div"
-                              className="rounded-md my-2"
-                              {...props}
-                            />
-                          ) : (
-                            <code className="bg-zinc-700 px-1 rounded text-pink-400" {...props}>
-                              {children}
-                            </code>
-                          );
-                        },
-                        ul: ({ children }) => <ul className="list-disc ml-4 my-2">{children}</ul>,
-                        ol: ({ children }) => <ol className="list-decimal ml-4 my-2">{children}</ol>,
-                      }}
-                    />
+                    <MarkdownMessage content={message.content} />
 
                   </div>
 
