@@ -31,8 +31,8 @@ app.use('/workspace/:workspaceId/pdfs', pdfRoutes);
 app.use('/workspace/:workspaceId/chats', chatRoutes);
 
 // Test route
-app.get('/', (req, res) => {
-  res.send('Server Working!');
+app.get('/api/health', (req, res) => {
+  res.status(200).send('Server Working!');
 });
 
 connectDb();
