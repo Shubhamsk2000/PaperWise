@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
-import { X } from 'lucide-react';
+import { Terminal, X } from 'lucide-react';
 
 const ServerCheck = () => {
-    const [hide, setHide] = useState(true);
+    const [hide, setHide] = useState(false);
     const [logs, setLogs] = useState([]);
 
     const logSequence =
@@ -13,6 +13,7 @@ const ServerCheck = () => {
         ];
 
     const handleStatusCheck = async () => {
+        setHide(true)
         const response = await fetch(`${import.meta.env.VITE_SERVER_URL}/api/health`);
 
         if (response.ok) {
@@ -26,10 +27,6 @@ const ServerCheck = () => {
             setHide(false);
         }
         console.log(response)
-    }
-
-    const handleClick = () => {
-        setHide(false);
     }
 
     useEffect(() => {
@@ -56,31 +53,39 @@ const ServerCheck = () => {
     }, []);
 
     return (
-        <div className={`w-full flex justify-center items-center h-full absolute top-0 left-0 backdrop-blur-xs z-30 ${hide ? '' : 'hidden -z-10'} shadow-2xl text-white`}>
-            <div className='w-180 rounded-3xl h-120 bg-[#090b0e] relative'>
-                <div className='h-10 w-10 border border-white absolute top-0 right-0 m-2 rounded-xl flex justify-center items-center cursor-pointer'
-                    onClick={handleClick}
-                >
-                    <X />
+        <div className={`w-full flex justify-center items-center h-full fixed top-0 left-0 backdrop-blur-sm z-50 shadow-2xl text-white p-4 ${hide ? '' : 'hidden'}`}>
+            <div className='w-full max-w-2xl rounded-2xl h-96 bg-[#090b0e] relative border border-gray-800 flex flex-col'>
+
+                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800">
+                    <div className="flex items-center gap-2">
+                        <Terminal size={16} className="text-gray-500" />
+                        <span className="text-xs font-mono text-gray-500">root@portfolio:~</span>
+                    </div>
+                    <div
+                        className='h-7 w-7 border border-gray-700 rounded-lg flex justify-center items-center cursor-pointer hover:bg-white/5 transition-colors'
+                        onClick={() => setHide(false)}
+                    >
+                        <X size={14} />
+                    </div>
                 </div>
 
-                <div className="p-6 font-mono text-sm text-gray-300 space-y-1 overflow-hidden">
+                <div className="p-6 font-mono text-sm text-gray-300 space-y-2 overflow-y-auto flex-1 custom-scrollbar">
                     {logs?.map((log, i) => (
-                        <div key={i} className="flex gap-3">
-                            <span className="text-gray-500">
-                                {log?.time}
-                            </span>
-
-
-                            <span className="text-gray-200">
+                        <div key={i} className="flex gap-3 animate-in fade-in slide-in-from-bottom-1 duration-300">
+                            <span className="text-gray-500 shrink-0 select-none">[{log.time}]</span>
+                            <span className='text-gray-300'>
                                 {log?.text}
                             </span>
                         </div>
                     ))}
 
-                    <span className="text-green-400 animate-ping">▌</span>
+                    <div className="flex items-center gap-2">
+                        <span className="text-blue-500">$</span>
+                        <span className="w-2 h-4 bg-green-500 animate-bounce inline-block" />
+                    </div>
                 </div>
             </div>
+
         </div>
     )
 }
