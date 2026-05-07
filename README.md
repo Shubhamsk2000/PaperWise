@@ -231,6 +231,6 @@ In your MongoDB Atlas UI, create a vector search index on the `PaperWise.pdf_chu
 
 <div align="center">
 
-Built with ❤️ using **LangChain**, **Google Gemini**, and **MongoDB Atlas**
+Built with ❤️
 
 </div>
