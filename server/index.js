@@ -8,6 +8,8 @@ import * as dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
 import connectDb from './infra/db/mongodb.js';
+
+//for bullmq worker to load in testing
 import "./worker.js";
 
 dotenv.config();

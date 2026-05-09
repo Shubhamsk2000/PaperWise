@@ -9,7 +9,7 @@ const client = new MongoClient(process.env.MONGODB_URI || "");
 const collection = client.db("PaperWise").collection("pdf_chunks_emb");
 
 const embeddings = new GoogleGenerativeAIEmbeddings({
-    model: "text-embedding-004" //768
+    model: "gemini-embedding-001"
 });
 
 export const vectorStore = new MongoDBAtlasVectorSearch(embeddings, {
